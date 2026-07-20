@@ -35,7 +35,16 @@ export function validateQuery<T>(schema: ZodType<T>) {
       return res.status(400).json({ error: "Validation failed", details: result.error.flatten() });
     }
 
-    Object.assign(req.query, result.data);
+    // req.query is a getter-only accessor in Express 5 that re-parses the
+    // query string on every access, so mutating the returned object (or
+    // reassigning req.query directly) is silently lost. Overriding the
+    // property itself is the supported way to persist parsed data on it.
+    Object.defineProperty(req, "query", {
+      value: result.data,
+      writable: true,
+      configurable: true,
+      enumerable: true,
+    });
     next();
   };
 }
