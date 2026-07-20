@@ -3,6 +3,8 @@ import jwt from "jsonwebtoken";
 
 export interface AuthTokenPayload {
   sub: number;
+  type: "access" | "refresh";
+  jti: string;
 }
 
 declare global {
@@ -23,6 +25,11 @@ export function authenticate(req: Request, res: Response, next: NextFunction) {
 
   try {
     const payload = jwt.verify(token, process.env.JWT_SECRET!) as unknown as AuthTokenPayload;
+
+    if (payload.type !== "access") {
+      return res.status(401).json({ error: "Invalid or expired token" });
+    }
+
     req.user = payload;
     next();
   } catch {
